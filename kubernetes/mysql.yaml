@@ -1,0 +1,59 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mysql-deployment
+  labels:
+    name: mysql-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql-deployment
+    spec:
+      containers:
+        - image: mysql
+          name: mysql
+          env:
+          - name: MYSQL_DATABASE
+            value: ghost
+          - name: MYSQL_USER
+            value: ghost_user
+          - name: MYSQL_ROOT_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-root-pass
+                key: root
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-ghost-pass
+                key: ghost
+          resources:
+            limits:
+              cpu: 100m
+          ports:
+            - containerPort: 3306
+              name: mysql
+          volumeMounts:
+            - name: mysql-persistent-storage
+              mountPath: /var/lib/mysql
+            - name: backup
+              mountPath: /backup
+          livenessProbe:
+            tcpSocket:
+              port: "mysql"
+            initialDelaySeconds: 5
+            timeoutSeconds: 1
+      volumes:
+        - name: backup
+          hostPath:
+            path: /var/lib/backup
+        - name: mysql-persistent-storage
+          hostPath:
+            path: /var/lib/mysql-data
+#          persistentVolumeClaim:
+#            claimName: mysql-pv-claim
+ #     nodeSelector:
+ #       cloud.google.com/gke-nodepool: mihail-mihaylov
+

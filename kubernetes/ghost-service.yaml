@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    name: ghost
+  name: ghost
+spec:
+  ports:
+    - name: ghost-http
+      port: 2368
+  selector:
+    app: ghost-deployment
+  #type: LoadBalancer
+  #loadBalancerIP: 104.196.169.165

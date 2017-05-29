@@ -1,0 +1,45 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: ghost-deployment
+  labels:
+    name: ghost-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: ghost-deployment
+    spec:
+      restartPolicy: Always
+      containers:
+        - image: "us.gcr.io/mihail-mihaylov/ghost-mysql:2.0"
+          name: "ghost"
+          ports:
+          - containerPort: 2368
+          env:
+          - name: GHOST_USER
+            value: ghost_user
+          - name: GHOST_PASS
+            valueFrom:
+              secretKeyRef:
+                name: mysql-ghost-pass
+                key: ghost
+          - name: GHOST_DATABASE
+            value: ghost
+          volumeMounts:
+            - name: ghost-pvc
+              mountPath: /var/lib/ghost
+#          resources:
+#            limits:
+#              cpu: 200m               
+      volumes:
+        - name: ghost-vol
+          hostPath:
+            path: /var/lib/ghost
+        - name: ghost-pvc
+          persistentVolumeClaim:
+            claimName: ghost-pv-claim
+#      nodeSelector:
+#        cloud.google.com/gke-nodepool: mihail-mihaylov
+

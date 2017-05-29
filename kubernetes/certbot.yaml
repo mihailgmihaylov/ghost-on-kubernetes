@@ -1,0 +1,48 @@
+# kubernetes-certbot-rc.yml
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: kubernetes-certbot
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        name: kubernetes-certbot
+    spec:
+      containers:
+      - name: kubernetes-certbot
+        image: us.gcr.io/mihail-mihaylov/certbot
+        imagePullPolicy: Always
+        env:
+          - name: SECRET_NAMESPACE
+            value: default
+          - name: SECRET_NAME_PREFIX
+            value: foobar
+        resources:
+          limits:
+            cpu: 50m
+        volumeMounts:
+        - mountPath: /etc/letsencrypt
+          name: letsencrypt-vol
+      volumes:
+        - name: letsencrypt-vol
+          hostPath:
+            path: /var/lib/letsencrypt-vol
+#      nodeSelector:
+#        cloud.google.com/gke-nodepool: mihail-mihaylov
+
+---
+# kubernetes-certbot-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubernetes-certbot
+spec:
+  selector:
+    name: kubernetes-certbot
+  ports:
+    - name: http
+      port: 80
+    - name: https
+      port: 443
