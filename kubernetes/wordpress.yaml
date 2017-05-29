@@ -1,0 +1,52 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: wordpress
+  labels:
+    app: wordpress
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: wordpress
+        tier: frontend
+    spec:
+      restartPolicy: Always
+      containers:
+        - image: wordpress:4.6.1-apache
+          name: wordpress
+          env:
+          - name: WORDPRESS_DB_HOST
+            value: mysql
+          - name: WORDPRESS_DB_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mysql-root-pass
+                key: root
+ #         resources:
+ #           limits:
+ #             cpu: 100m          
+          ports:
+          - containerPort: 80
+            name: wordpress-http
+          - containerPort: 443
+            name: wordpress-https
+          volumeMounts:
+            - name: wordpress-persistent-storage
+              mountPath: /var/www/html
+            - name: backup
+              mountPath: /backup
+      volumes:
+      - name: wordpress-persistent-storage
+        hostPath:
+          path: /var/lib/wordpress
+#        persistentVolumeClaim:
+#          claimName: wp-pv-claim
+      - name: backup
+        hostPath:
+          path: /var/lib/backup
+#      nodeSelector:
+#        cloud.google.com/gke-nodepool: mihail-mihaylov
+

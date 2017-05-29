@@ -1,0 +1,38 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: nginx-proxy-deployment
+  labels:
+    name: nginx-proxy-deployment
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: nginx-proxy-dep
+    spec:
+      restartPolicy: Always
+      containers:
+        - image: "us.gcr.io/mihail-mihaylov/nginx-proxy"
+          name: "nginx-proxy"
+          ports:
+          - containerPort: 443
+          - containerPort: 80
+          env:
+          - name: GHOST_SVC
+            value: ghost
+          - name: CERTBOT_SVC
+            value: kubernetes-certbot
+          - name: HOSTNAME
+            value: mihail-mihaylov.com
+          resources:
+            limits:
+              cpu: 50m
+          volumeMounts:
+            - name: mihail-mihaylov-cert
+              readOnly: true
+              mountPath: /etc/nginx/ssl
+      volumes:
+        - name: mihail-mihaylov-cert
+          secret:
+            secretName: foobar-mihail-mihaylov.com

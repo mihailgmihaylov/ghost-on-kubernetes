@@ -1,37 +1,22 @@
-# ghost-on-kubernetes
-Build Ghost personal Blog on Kubernetes Google Cloud cluster with MySQL backend database, Nginx web server and LetsEncrypt SSL certificate
+## Build your docker Ghost image:
+https://github.com/dockerfile/ghost
+https://hub.docker.com/_/ghost/
+https://github.com/docker-library/docs/tree/master/ghost
+https://github.com/galal-hussein/ghost-mysql-docker/blob/master/Dockerfile
+https://www.ghostforbeginners.com/migrating-ghost-installation-from-sqlite3-to-mysql/
 
-## Summary and instructions
-
-This repo guides you through the custom modification and setup of a Ghost blog on Google Cloud Kubernetes environment
-with Docker containers, MySQL database on Persistant Storage with kubernetes claims and LetsEncrypt for SSL certificate.
-
-**!Note** that it is a very detailed guide with deep explanation and customizations and may not be suitable for the everyday user.
-The purpose of it is to break down and understand each service and create the optimal environment.
-
-## Prepare for creating personal Ghost Docker image
-
-Get the latest Ghost docekr image:
-
-```
 sudo docker pull ghost:latest
-```
 
-Inspect ghost docker image:
-
-```
+-- Inspect ghost docker image:
 sudo docker run --name some-ghost -p 8080:2368 -d ghost
 sudo docker exec -ti some-ghost /bin/bash
-```
 
-The container should be up and running. If not, check the Ghost image Readme.md for changes in the new ghost docker image:
 ```
 sudo docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                    NAMES
 01d74bca8dc6        ghost               "/entrypoint.sh npm s"   7 seconds ago       Up 6 seconds        0.0.0.0:8080->2368/tcp   some-ghost
 ```
 
-Note the `entrypoint.sh` and the two variables `GHOST_SOURCE` and `GHOST_CONTENT`:
 ```
 root@01d74bca8dc6:/usr/src/ghost# cat /entrypoint.sh
 #!/bin/bash
@@ -72,10 +57,7 @@ root@01d74bca8dc6:/usr/src/ghost# echo $GHOST_CONTENT
 root@01d74bca8dc6:/usr/src/ghost#
 ```
 
-Also check the:
-```
 cat $GHOST_CONTENT/config.js
-```
 and see there are sections for // ### Producton, // ### Testing etc.
 These are examples we can use. At the end we will need only one. The best way is to create our own config.js and copy it in the Docker file.
 
@@ -125,7 +107,7 @@ config = {
 module.exports = config;
 ```
 
-In the entrypoint.sh just change the "if [ ! -e "$GHOST_CONTENT/config.js" ]; then" block and add seds for the database:
+in the entrypoint.sh just change the "if [ ! -e "$GHOST_CONTENT/config.js" ]; then" block and add seds for the database:
 
 ```
 #!/bin/bash
@@ -170,12 +152,9 @@ Chech the image:
 sudo docker images
 ```
 
-## Bring up the Docker environment on localhost 
-
 We will try out the whole environment on our localmachine with docker only before preparing it for kubernetes:
 
 Start the MySQL from the base mysql docker image and preparing the database:
-
 ```
 sudo docker run -d -t -i -e MYSQL_ROOT_PASSWORD='Q1w2e3r4t5y6' \
 -e MYSQL_DATABASE='ghost' \
@@ -216,8 +195,6 @@ a13b03653eb8        mysql               "docker-entrypoint.sh"   3 hours ago    
 
 ## Upload your new ghost image to Google Cloud Docker Registry (note that we will use the docker hub version of mysql):
 
-**!Note that before using this section you will have to have a working Google Cloud account and setuped Google Cloud SDK**
-
 ```
 sudo docker tag ghost-mysql  us.gcr.io/mihail-mihaylov/ghost-mysql
 sudo gcloud docker -- push us.gcr.io/mihail-mihaylov/ghost-mysql
@@ -250,8 +227,8 @@ gcloud compute disks create --size=10GB --zone='us-east1-d' ghost-pv-1
 
 create secrets:
 ```
-kubectl create secret generic mysql-root-pass --from-literal=root=<your-pass>
-kubectl create secret generic mysql-ghost-pass --from-literal=ghost=<your-pass>
+kubectl create secret generic mysql-root-pass --from-literal=root=Q1w2e3r4t5y6
+kubectl create secret generic mysql-ghost-pass --from-literal=ghost=Gh0st_B@s3
 ```
 
 
@@ -284,14 +261,10 @@ http://mihail-mihaylov.com/
 
 You can start editing your block and make the first article which will be the article how to make this block in kubernetes aaaand... endless recursion!!!
 
-```
 certbot certonly --standalone -d mihail-mihaylo.com --email mihail.georgiev.mihaylov@gmail.com --standalone-supported-challenges tls-sni-01
-```
 
 Test dry run renew:
-```
 44 20 * * * letsencrypt --agree-tos certonly -a standalone --keep-until-expiring -d mihail-mihaylov.com --standalone-supported-challenges tls-sni-01 --email mihail.georgiev.mihaylov@gmail.com --dry-rund
-```
 
 ## Certbot pod
 https://github.com/choffmeister/kubernetes-certbot
@@ -309,22 +282,24 @@ server {
 }
 ```
 
-To issue new certificate, get it, store it in a kubernetes secret and reissue the nginx pod:
-```
 kubectl create -f ./certbot.yaml
 
 kubectl exec -it kubernetes-certbot-kvw0u -- bash ./run.sh "mihail-mihaylov.com" "mihail.georgiev.mihaylov@gmail.com" "mihail-mihaylov.com,www.mihail-mihaylov.com"
 
 kubectl get secret foobar-mihail-mihaylov.com -o yaml
-```
 
-Change the image name and:
-```
+change the image name and:
 kubectl apply -f ./nginx-proxy.yaml
-```
 
-Once everything is fine, you can get rid of the certbot pod and service. You can create them if you need them in the future:
-
-```
+once everything is fine, you can get rid of the certbot pod and service. You can create them if you need them in the future:
 kubectl delete -f ./certbot.yaml
+
+
+
+## Wordpress
+
+Create secret for the password:
+
+```
+kubectl create secret generic mysql-wordpress-pass --from-literal=ghost=W0rdPr3ss!
 ```
